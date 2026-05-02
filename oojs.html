@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OOJS Graphical Application</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f4f4f9; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; /* Hide scrollbars for full screen graphics */
+        }
+        .ui-container { 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            background: rgba(255, 255, 255, 0.9); 
+            padding: 20px; 
+            border-radius: 5px; 
+            border: 1px solid #ccc; 
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { margin-top: 0; font-size: 20px; color: #2c3e50; }
+        button { 
+            padding: 10px 15px; 
+            background-color: #2c3e50; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-right: 5px; 
+            margin-bottom: 5px;
+        }
+        button:hover { background-color: #1a252f; }
+        .back-link { 
+            display: inline-block; 
+            margin-bottom: 15px; 
+            color: #2c3e50; 
+            text-decoration: none; 
+        }
+        .back-link:hover { text-decoration: underline; }
+        
+        /* The shapes that will be added to the document body */
+        .shape {
+            position: absolute;
+            box-sizing: border-box;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-container">
+        <a href="index.html" class="back-link">Back to Home</a>
+        <h1>OOJS Graphical App</h1>
+        <p>Using class, constructor, extends, super & document.body.appendChild.</p>
+        <button id="addBoxBtn">Add Bouncing Box</button>
+        <button id="addCircleBtn">Add Bouncing Circle</button>
+        <button id="clearBtn">Clear All</button>
+    </div>
+
+    <script>
+        // Array to hold all animated objects
+        let animatedShapes = [];
+
+        // Base Class: Shape
+        class Shape {
+            constructor(x, y, size, color) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                
+                // Random velocity between -3 and 3 (but not zero)
+                this.vx = (Math.random() - 0.5) * 6;
+                this.vy = (Math.random() - 0.5) * 6;
+                if(this.vx === 0) this.vx = 2;
+                if(this.vy === 0) this.vy = 2;
+
+                // Create DOM element
+                this.element = document.createElement('div');
+                this.element.className = 'shape';
+                this.element.style.width = this.size + 'px';
+                this.element.style.height = this.size + 'px';
+                this.element.style.backgroundColor = this.color;
+                
+                // document.body.appendChild requirement
+                document.body.appendChild(this.element);
+                
+                this.updatePosition();
+            }
+
+            updatePosition() {
+                this.element.style.left = this.x + 'px';
+                this.element.style.top = this.y + 'px';
+            }
+
+            move() {
+                // Update coordinates
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Collision detection with window boundaries
+                if (this.x <= 0 || this.x + this.size >= window.innerWidth) {
+                    this.vx = -this.vx;
+                }
+                if (this.y <= 0 || this.y + this.size >= window.innerHeight) {
+                    this.vy = -this.vy;
+                }
+
+                this.updatePosition();
+            }
+
+            remove() {
+                if (this.element.parentNode) {
+                    this.element.parentNode.removeChild(this.element);
+                }
+            }
+        }
+
+        // Derived Class: Box (extends Shape)
+        class Box extends Shape {
+            constructor(x, y, size, color) {
+                // super requirement
+                super(x, y, size, color);
+                this.element.style.borderRadius = '0px'; // Square
+                this.element.style.border = '2px solid black';
+            }
+        }
+
+        // Derived Class: Circle (extends Shape)
+        class Circle extends Shape {
+            constructor(x, y, size, color) {
+                // super requirement
+                super(x, y, size, color);
+                this.element.style.borderRadius = '50%'; // Circle
+                this.element.style.border = '2px dashed white';
+            }
+        }
+
+        // Helper to get random color
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        // Event Listeners
+        document.getElementById('addBoxBtn').addEventListener('click', () => {
+            const size = Math.random() * 50 + 30; // 30 to 80
+            const x = Math.random() * (window.innerWidth - size);
+            const y = Math.random() * (window.innerHeight - size);
+            const box = new Box(x, y, size, getRandomColor());
+            animatedShapes.push(box);
+        });
+
+        document.getElementById('addCircleBtn').addEventListener('click', () => {
+            const size = Math.random() * 50 + 30; // 30 to 80
+            const x = Math.random() * (window.innerWidth - size);
+            const y = Math.random() * (window.innerHeight - size);
+            const circle = new Circle(x, y, size, getRandomColor());
+            animatedShapes.push(circle);
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            animatedShapes.forEach(shape => shape.remove());
+            animatedShapes = [];
+        });
+
+        // Animation Loop using requestAnimationFrame
+        function animate() {
+            animatedShapes.forEach(shape => shape.move());
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation
+        animate();
+
+        // Handle window resize to keep shapes in bounds
+        window.addEventListener('resize', () => {
+            animatedShapes.forEach(shape => {
+                if (shape.x + shape.size > window.innerWidth) shape.x = window.innerWidth - shape.size;
+                if (shape.y + shape.size > window.innerHeight) shape.y = window.innerHeight - shape.size;
+            });
+        });
+    </script>
+</body>
+</html>
